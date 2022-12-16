@@ -50,8 +50,26 @@ proc rowCoverage(sensors: seq[Sensor], y: int): int =
       beaconsInRow.incl(s.closestBeacon.x)
   result -= len(beaconsInRow)
 
+# this takes 3.8s on my 2021 macbook pro so is fast enough
+# but it feels like there should be a better algorithm
+proc findMissingBeaconSlowly(sensors: seq[Sensor], range: int): int64 =
+  for y in 0 .. range:
+    let xs = sensors.map(s => rowCoverageForOneSensor(s, y))
+    var rightmost = -1
+    for (left, right) in sorted(xs):
+      if right < left:  # skip empty intervals
+        continue
+      if left > rightmost:
+        if rightmost >= 0 and left > rightmost + 1:
+          return cast[int64](rightmost + 1) * 4000000 + cast[int64](y)
+        rightmost = right
+      elif right > rightmost:
+        rightmost = right
+
 let test = readSensors("day15-test.txt")
 assert rowCoverage(test, 10) == 26
+assert findMissingBeaconSlowly(test, range = 20) == 56000011
 
 let input = readSensors("day15-input.txt")
 echo rowCoverage(input, 2000000)
+echo findMissingBeaconSlowly(input, range = 4000000)
